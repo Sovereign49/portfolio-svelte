@@ -22,7 +22,60 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Single deploy job since we're just deploying
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Bun Runtime
+        uses: antongolub/action-setup-bun@v1
+        with:
+          # Optional, if empty the latest bun version will be used
+          # Examples: 0.0.77, 0.1.2, >=0.1, *
+          bun-version: 1.0.7
+
+          # Optional, default is 'Jarred-Sumner/bun-releases-for-updater'
+          # Example: oven-sh/misc-test-builds
+          bun-repo: 'Jarred-Sumner/bun-releases-for-updater'
+
+          # Override bunfig.toml inners
+          # Optional. JSON-formatted string as input
+          # See: https://github.com/oven-sh/bun#bunfigtoml
+          bun-config: '{"install": {"production": true}}'
+          
+          # Attach $BUN_INSTALL/install/cache to action/cache
+          # Optional, defaults to false
+          cache: true
+
+          # actions/tool-cache provides a cache for the current job only
+          # Use actions/cache to store the bun binary for the whole workflow
+          # Optional, defaults to false
+          cache-bin: true
+
+          # Optional, default is process.platform
+          # Examples: darwin, linux
+          platform: 'linux'
+
+          # Optional, default is process.arch
+          # Examples: x64, arm64
+          arch: 'x64'
+    
+
+      - name: Install dependencies
+        run: bun i
+
+      - name: Build project
+        run: bun run build
+
+      - name: Upload production-ready build files
+        uses: actions/upload-artifact@v3
+        with:
+          name: production-files
+          path: ./dist
+    
   deploy:
     environment:
       name: github-pages
